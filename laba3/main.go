@@ -1,17 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
-	"github.com/Atomicall/Mod/laba3/packages/stdoutlog"
+	"github.com/Atomicall/Mod/laba3/packages/stdoutLog"
 )
 
 const (
-	Iterations int     = 200
-	A          int     = 131
-	C          int     = 1021
-	M          int     = 100
-	initProb   float64 = 0.9
+	A        int     = 131
+	C        int     = 1021
+	M        int     = 100
+	initProb float64 = 0.9
 )
 
 func ComputeNextRandom(prevVal float64) (nextVal float64) {
@@ -19,7 +19,7 @@ func ComputeNextRandom(prevVal float64) (nextVal float64) {
 	return
 }
 
-func ComputeNextState(ConversionMat [3][3]float64, prevState int, currentProbability float64) (nextState int) {
+func ComputeNextState(ConversionMat [][]float64, prevState int, currentProbability float64) (nextState int) {
 	conversions := ConversionMat[prevState]
 	accum := 0.0
 	for index, convProb := range conversions {
@@ -32,7 +32,7 @@ func ComputeNextState(ConversionMat [3][3]float64, prevState int, currentProbabi
 	return
 }
 
-func ImmitateConversions(ConversionMat [3][3]float64, initState int) (steadyProbs [3]float64, steps int) {
+func ImmitateConversions(ConversionMat [][]float64, initState int, iterations *int) (steadyProbs [3]float64, steps int) {
 	stateCounter := make([]int, 3)
 	steps = 1
 
@@ -40,7 +40,7 @@ func ImmitateConversions(ConversionMat [3][3]float64, initState int) (steadyProb
 	nextState := ComputeNextState(ConversionMat, initState, tempVal)
 	stateCounter[nextState]++
 
-	for i := 0; i < Iterations-1; i++ {
+	for i := 0; i < *iterations-1; i++ {
 		tempVal = ComputeNextRandom(tempVal)
 		nextState = ComputeNextState(ConversionMat, nextState, tempVal)
 		if ConversionMat[nextState][nextState] == 1 {
@@ -52,7 +52,7 @@ func ImmitateConversions(ConversionMat [3][3]float64, initState int) (steadyProb
 	}
 	fmt.Printf("\n\t%v", stateCounter)
 	for i, counts := range stateCounter {
-		steadyProbs[i] = float64(counts) / float64(Iterations)
+		steadyProbs[i] = float64(counts) / float64(*iterations)
 	}
 
 	return
@@ -60,22 +60,26 @@ func ImmitateConversions(ConversionMat [3][3]float64, initState int) (steadyProb
 
 func main() {
 	var (
-		ConversionMat = [3][3]float64{
+		ConversionMat = [][]float64{
 			{0.1, 0.8, 0.1},
 			{0.3, 0.5, 0.2},
 			{0.7, 0.2, 0.1},
 		}
-		ConversionAbsorbingMat = [3][3]float64{
+		ConversionAbsorbingMat = [][]float64{
 			{0.2, 0.1, 0.7},
 			{0, 1, 0},
 			{0.3, 0.6, 0.1},
 		}
 	)
-	ImmitateConversionsWithOutput := stdoutlog.ShowDecorator(ImmitateConversions)
+
+	Iterations := flag.Int("i", 100, "Number of Iterations to process")
+	flag.Parse()
+
+	ImmitateConversionsWithOutput := stdoutLog.ShowDecorator(ImmitateConversions)
 	for i := 0; i < 3; i++ {
 		fmt.Printf("Init State : %v\n", i)
-		ImmitateConversionsWithOutput(ConversionMat, i)
-		ImmitateConversionsWithOutput(ConversionAbsorbingMat, i)
+		ImmitateConversionsWithOutput(ConversionMat, i, Iterations)
+		ImmitateConversionsWithOutput(ConversionAbsorbingMat, i, Iterations)
 		fmt.Println()
 	}
 }
